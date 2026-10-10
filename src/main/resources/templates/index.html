@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="_csrf" th:content="${_csrf.token}"><meta name="_csrf_header" th:content="${_csrf.headerName}">
+  <title>TaskFlow — Workspace</title>
+  <link rel="stylesheet" th:href="@{/css/styles.css}">
+  <script defer th:src="@{/js/app.js}"></script>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <a class="brand" href="/"><span class="brand-mark">T</span><span>TaskFlow<small>WORKSPACE</small></span></a>
+    <div class="side-label">WORKSPACE</div>
+    <a class="nav-item active" href="/"><span>▦</span> Overview</a>
+    <div class="sidebar-note"><span class="note-icon">✦</span><div><b>Make progress visible.</b><p>Keep priorities clear and work moving.</p></div></div>
+    <div class="side-bottom"><span class="avatar" th:text="${#strings.substring(currentUsername,0,1).toUpperCase()}">U</span><div><b th:text="${currentUsername}">username</b><small>Personal workspace</small></div></div>
+  </aside>
+  <main class="main-content">
+    <header class="topbar"><div><span class="eyebrow">YOUR PERSONAL WORKSPACE</span><h1>Good work starts with a clear plan.</h1><p class="subheading">Organize your tasks. Focus on what matters. Make progress.</p></div><div class="topbar-actions"><form method="post" th:action="@{/logout}"><button class="secondary-button" type="submit">Sign out</button></form><button class="primary-button" type="button" data-open-modal>＋ New task</button></div></header>
+
+    <div class="flash success" th:if="${success}" th:text="${success}"></div>
+    <div class="flash error" th:if="${error}" th:text="${error}"></div>
+
+    <section class="stats-grid">
+      <article class="stat-card"><div class="stat-top"><span class="stat-label">To do</span><span class="stat-icon purple">◷</span></div><strong th:text="${todoCount}">0</strong><span class="stat-foot">Waiting to be started</span></article>
+      <article class="stat-card"><div class="stat-top"><span class="stat-label">In progress</span><span class="stat-icon blue">↗</span></div><strong th:text="${progressCount}">0</strong><span class="stat-foot">Work currently moving</span></article>
+      <article class="stat-card"><div class="stat-top"><span class="stat-label">Completed</span><span class="stat-icon green">✓</span></div><strong th:text="${doneCount}">0</strong><span class="stat-foot">Tasks across the finish line</span></article>
+    </section>
+
+    <section class="board-header"><div><h2>Task board</h2><p>Every task has a next step.</p></div>
+      <form class="filters" method="get" action="/">
+        <label class="search-box"><span>⌕</span><input type="search" name="query" placeholder="Search title, section, priority, assignee..." aria-label="Search tasks by title, description, assignee, section, priority, or status" th:value="${query}"></label>
+        <select name="priority" aria-label="Filter by priority"><option value="">All priorities</option><option th:each="p : ${priorities}" th:value="${p}" th:text="${p}" th:selected="${p == selectedPriority}"></option></select>
+        <select name="status" aria-label="Filter by status"><option value="">All statuses</option><option th:each="s : ${statuses}" th:value="${s}" th:text="${s.toString().replace('_',' ')}" th:selected="${s == selectedStatus}"></option></select>
+        <button class="filter-button" type="submit">Search</button><a class="clear-link" href="/">Clear</a>
+      </form>
+    </section>
+
+    <section class="board">
+      <div class="board-column">
+        <div class="column-heading"><span class="column-dot todo-dot"></span><h3>To do</h3><span class="column-count" th:text="${#lists.size(tasks.?[status.name() == 'TODO'])}">0</span></div>
+        <div class="task-list" th:attr="data-status='TODO'">
+          <article class="task-card" draggable="true" th:attr="data-task-id=${task.id},data-task-status=${task.status.name()},data-checklist-total=${task.checklistTotal},data-checklist-completed=${task.checklistCompleted},data-checklist-percent=${task.checklistPercent}" th:each="task : ${tasks}" th:if="${task.status.name() == 'TODO'}">
+            <div class="card-top"><span class="priority" th:classappend="${' priority-' + task.priority.name().toLowerCase()}" th:text="${task.priority}">MEDIUM</span><button class="more-button" type="button" aria-label="Task actions">•••</button></div>
+            <h4 th:text="${task.title}">Task title</h4><p class="task-description" th:text="${task.description}">Description</p>
+            <div class="task-section-chip" th:text="${task.section}">General</div>
+            <section class="card-checklist" th:if="${task.checklistTotal > 0}" aria-label="Checklist progress">
+              <div class="checklist-progress-label"><span>Checklist</span><strong th:text="${task.checklistCompleted + '/' + task.checklistTotal + ' · ' + task.checklistPercent + '%'}">3/5 · 60%</strong></div>
+              <div class="progress-track" role="progressbar" th:attr="aria-valuenow=${task.checklistPercent},aria-valuemin=0,aria-valuemax=100,aria-label=${'Checklist progress for ' + task.title}"><span class="progress-fill" th:style="${'width:' + task.checklistPercent + '%'}"></span></div>
+              <ul class="card-checklist-items"><li th:each="item : ${task.checklistItems}" th:classappend="${item.completed ? ' checklist-done' : ''}"><span class="item-check" th:text="${item.completed ? '✓' : '○'}">○</span><span th:text="${item.text}">Checklist item</span></li></ul>
+            </section>
+            <div class="due-date" th:if="${task.dueDate != null}" th:classappend="${task.status.name() != 'DONE' and task.dueDate.isBefore(T(java.time.LocalDate).now()) ? ' overdue' : (task.status.name() != 'DONE' and task.dueDate.equals(T(java.time.LocalDate).now()) ? ' due-today' : '')}">
+              <span>▦</span> Due <time th:text="${task.dueDate}">2026-10-20</time>
+              <strong th:if="${task.status.name() != 'DONE' and task.dueDate.isBefore(T(java.time.LocalDate).now())}">Overdue</strong>
+              <strong th:if="${task.status.name() != 'DONE' and task.dueDate.equals(T(java.time.LocalDate).now())}">Today</strong>
+            </div>
+            <div class="card-footer"><span class="assignee"><span class="mini-avatar" th:text="${#strings.substring(task.assignee,0,1).toUpperCase()}">M</span><span th:text="${task.assignee}">Assignee</span></span><a class="edit-link" th:href="@{/tasks/{id}/edit(id=${task.id})}">Edit</a></div>
+            <div class="card-actions"><form method="post" th:action="@{/tasks/{id}/status(id=${task.id})}"><input type="hidden" name="status" value="IN_PROGRESS"><button type="submit">Start task →</button></form><form method="post" th:action="@{/tasks/{id}/delete(id=${task.id})}" data-confirm-delete><button class="delete-link" type="submit">Delete</button></form></div>
+          </article>
+          <div class="empty-state" th:if="${#lists.isEmpty(tasks.?[status.name() == 'TODO'])}">Nothing waiting here. Add a task to get started.</div>
+        </div>
+      </div>
+      <div class="board-column">
+        <div class="column-heading"><span class="column-dot progress-dot"></span><h3>In progress</h3><span class="column-count" th:text="${#lists.size(tasks.?[status.name() == 'IN_PROGRESS'])}">0</span></div>
+        <div class="task-list" th:attr="data-status='IN_PROGRESS'">
+          <article class="task-card" draggable="true" th:attr="data-task-id=${task.id},data-task-status=${task.status.name()},data-checklist-total=${task.checklistTotal},data-checklist-completed=${task.checklistCompleted},data-checklist-percent=${task.checklistPercent}" th:each="task : ${tasks}" th:if="${task.status.name() == 'IN_PROGRESS'}">
+            <div class="card-top"><span class="priority" th:classappend="${' priority-' + task.priority.name().toLowerCase()}" th:text="${task.priority}">MEDIUM</span><button class="more-button" type="button" aria-label="Task actions">•••</button></div>
+            <h4 th:text="${task.title}">Task title</h4><p class="task-description" th:text="${task.description}">Description</p>
+            <div class="task-section-chip" th:text="${task.section}">General</div>
+            <section class="card-checklist" th:if="${task.checklistTotal > 0}" aria-label="Checklist progress">
+              <div class="checklist-progress-label"><span>Checklist</span><strong th:text="${task.checklistCompleted + '/' + task.checklistTotal + ' · ' + task.checklistPercent + '%'}">3/5 · 60%</strong></div>
+              <div class="progress-track" role="progressbar" th:attr="aria-valuenow=${task.checklistPercent},aria-valuemin=0,aria-valuemax=100,aria-label=${'Checklist progress for ' + task.title}"><span class="progress-fill" th:style="${'width:' + task.checklistPercent + '%'}"></span></div>
+              <ul class="card-checklist-items"><li th:each="item : ${task.checklistItems}" th:classappend="${item.completed ? ' checklist-done' : ''}"><span class="item-check" th:text="${item.completed ? '✓' : '○'}">○</span><span th:text="${item.text}">Checklist item</span></li></ul>
+            </section>
+            <div class="due-date" th:if="${task.dueDate != null}" th:classappend="${task.status.name() != 'DONE' and task.dueDate.isBefore(T(java.time.LocalDate).now()) ? ' overdue' : (task.status.name() != 'DONE' and task.dueDate.equals(T(java.time.LocalDate).now()) ? ' due-today' : '')}">
+              <span>▦</span> Due <time th:text="${task.dueDate}">2026-10-20</time>
+              <strong th:if="${task.status.name() != 'DONE' and task.dueDate.isBefore(T(java.time.LocalDate).now())}">Overdue</strong>
+              <strong th:if="${task.status.name() != 'DONE' and task.dueDate.equals(T(java.time.LocalDate).now())}">Today</strong>
+            </div>
+            <div class="card-footer"><span class="assignee"><span class="mini-avatar" th:text="${#strings.substring(task.assignee,0,1).toUpperCase()}">M</span><span th:text="${task.assignee}">Assignee</span></span><a class="edit-link" th:href="@{/tasks/{id}/edit(id=${task.id})}">Edit</a></div>
+            <div class="card-actions"><form method="post" th:action="@{/tasks/{id}/status(id=${task.id})}" data-confirm-complete><input type="hidden" name="status" value="DONE"><input type="hidden" name="allowIncompleteChecklist" value="false"><input type="hidden" name="markChecklistComplete" value="false"><button type="submit">Mark complete ✓</button></form><form method="post" th:action="@{/tasks/{id}/status(id=${task.id})}"><input type="hidden" name="status" value="TODO"><button class="muted-action" type="submit">Move back</button></form></div>
+          </article>
+          <div class="empty-state" th:if="${#lists.isEmpty(tasks.?[status.name() == 'IN_PROGRESS'])}">No tasks in motion. Start one when you're ready.</div>
+        </div>
+      </div>
+      <div class="board-column">
+        <div class="column-heading"><span class="column-dot done-dot"></span><h3>Done</h3><span class="column-count" th:text="${#lists.size(tasks.?[status.name() == 'DONE'])}">0</span></div>
+        <div class="task-list" th:attr="data-status='DONE'">
+          <article class="task-card completed-card" draggable="true" th:attr="data-task-id=${task.id},data-task-status=${task.status.name()},data-checklist-total=${task.checklistTotal},data-checklist-completed=${task.checklistCompleted},data-checklist-percent=${task.checklistPercent}" th:each="task : ${tasks}" th:if="${task.status.name() == 'DONE'}">
+            <div class="card-top"><span class="priority" th:classappend="${' priority-' + task.priority.name().toLowerCase()}" th:text="${task.priority}">MEDIUM</span><span class="done-check">✓</span></div>
+            <h4 th:text="${task.title}">Task title</h4><p class="task-description" th:text="${task.description}">Description</p>
+            <div class="task-section-chip" th:text="${task.section}">General</div>
+            <section class="card-checklist" th:if="${task.checklistTotal > 0}" aria-label="Checklist progress">
+              <div class="checklist-progress-label"><span>Checklist</span><strong th:text="${task.checklistCompleted + '/' + task.checklistTotal + ' · ' + task.checklistPercent + '%'}">3/5 · 60%</strong></div>
+              <div class="progress-track" role="progressbar" th:attr="aria-valuenow=${task.checklistPercent},aria-valuemin=0,aria-valuemax=100,aria-label=${'Checklist progress for ' + task.title}"><span class="progress-fill" th:style="${'width:' + task.checklistPercent + '%'}"></span></div>
+              <ul class="card-checklist-items"><li th:each="item : ${task.checklistItems}" th:classappend="${item.completed ? ' checklist-done' : ''}"><span class="item-check" th:text="${item.completed ? '✓' : '○'}">○</span><span th:text="${item.text}">Checklist item</span></li></ul>
+            </section>
+            <div class="due-date" th:if="${task.dueDate != null}" th:classappend="${task.status.name() != 'DONE' and task.dueDate.isBefore(T(java.time.LocalDate).now()) ? ' overdue' : (task.status.name() != 'DONE' and task.dueDate.equals(T(java.time.LocalDate).now()) ? ' due-today' : '')}">
+              <span>▦</span> Due <time th:text="${task.dueDate}">2026-10-20</time>
+              <strong th:if="${task.status.name() != 'DONE' and task.dueDate.isBefore(T(java.time.LocalDate).now())}">Overdue</strong>
+              <strong th:if="${task.status.name() != 'DONE' and task.dueDate.equals(T(java.time.LocalDate).now())}">Today</strong>
+            </div>
+            <div class="card-footer"><span class="assignee"><span class="mini-avatar" th:text="${#strings.substring(task.assignee,0,1).toUpperCase()}">M</span><span th:text="${task.assignee}">Assignee</span></span><a class="edit-link" th:href="@{/tasks/{id}/edit(id=${task.id})}">Edit</a></div>
+            <div class="card-actions"><form method="post" th:action="@{/tasks/{id}/status(id=${task.id})}"><input type="hidden" name="status" value="IN_PROGRESS"><button class="muted-action" type="submit">Reopen task</button></form><form method="post" th:action="@{/tasks/{id}/delete(id=${task.id})}" data-confirm-delete><button class="delete-link" type="submit">Delete</button></form></div>
+          </article>
+          <div class="empty-state" th:if="${#lists.isEmpty(tasks.?[status.name() == 'DONE'])}">Finished work will show up here.</div>
+        </div>
+      </div>
+    </section>
+    <footer class="footer">TaskFlow <span>·</span> Small steps. Consistent progress.</footer>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="taskModal" aria-hidden="true">
+  <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-header"><div><span class="eyebrow">MAKE IT ACTIONABLE</span><h2 id="modalTitle">Create a task</h2></div><button type="button" class="close-button" data-close-modal aria-label="Close">×</button></div>
+    <form method="post" th:action="@{/tasks}" class="task-form">
+      <label>Task title <span>*</span><input name="title" maxlength="120" required placeholder="e.g. Finish project documentation"></label>
+      <label>Description <textarea name="description" maxlength="2000" rows="3" placeholder="Add a little context (optional)"></textarea></label>
+      <div class="form-row"><label>Assignee <span>*</span><input name="assignee" maxlength="80" required placeholder="Name"></label>
+      <label>Priority<select name="priority"><option value="LOW">Low</option><option value="MEDIUM" selected>Medium</option><option value="HIGH">High</option></select></label></div>
+      <label>Due date<input type="date" name="dueDate" min="2000-01-01"></label>
+      <label>Section <span>*</span><input name="section" maxlength="80" list="sectionSuggestions" value="General" required placeholder="e.g. Job, College, Home"><datalist id="sectionSuggestions"><option th:each="section : ${sections}" th:value="${section}"></option><option value="Job"></option><option value="College"></option><option value="Home"></option></datalist><small>Choose an existing section or type a new name.</small></label>
+      <label>Status<select name="status"><option value="TODO">To do</option><option value="IN_PROGRESS">In progress</option><option value="DONE">Done</option></select></label>
+      <div class="modal-actions"><button type="button" class="secondary-button" data-close-modal>Cancel</button><button type="submit" class="primary-button">Create task</button></div>
+    </form>
+  </section>
+</div>
+</body></html>

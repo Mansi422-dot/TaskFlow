@@ -1,0 +1,25 @@
+# Build output
+target/
+
+# Local database and uploaded files
+data/
+
+# IDE and OS files
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Logs, temporary files, and crash dumps
+*.log
+*.tmp
+hs_err_pid*
+*.hprof
+
+# Environment files / secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem

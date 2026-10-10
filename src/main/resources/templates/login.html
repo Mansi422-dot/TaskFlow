@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in — TaskFlow</title><link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body class="login-page">
+  <main class="login-card">
+    <a class="brand login-brand" th:href="@{/}"><span class="brand-mark">T</span><span>TaskFlow<small>PERSONAL WORKSPACE</small></span></a>
+    <span class="eyebrow">WELCOME BACK</span>
+    <h1>Sign in to TaskFlow</h1>
+    <p class="subheading">Your tasks, checklists, and plans in one place.</p>
+    <div class="flash error" th:if="${param.error}">Incorrect username or password. Try again.</div>
+    <div class="flash success" th:if="${param.logout}">You have signed out successfully.</div>
+    <div class="flash success" th:if="${param.registered}">Account created. Sign in with your new credentials.</div>
+    <div class="flash success" th:if="${param.passwordReset}">Your password has been reset. Sign in with your new password.</div>
+    <div class="flash success" th:if="${success}" th:text="${success}"></div>
+    <form method="post" th:action="@{/login}" class="task-form login-form">
+      <label>Username<input name="username" autocomplete="username" required autofocus placeholder="Enter username"></label>
+      <label>Password<input name="password" type="password" autocomplete="current-password" required placeholder="Enter password"></label>
+      <button type="submit" class="primary-button login-submit">Sign in</button>
+    </form>
+    <p class="login-footnote"><a th:href="@{/forgot-password}">Forgot your password?</a></p>
+    <p class="login-footnote">New to TaskFlow? <a th:href="@{/register}">Create an account</a></p>
+  </main>
+</body>
+</html>

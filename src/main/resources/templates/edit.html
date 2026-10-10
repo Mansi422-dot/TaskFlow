@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Edit task — TaskFlow</title><link rel="stylesheet" th:href="@{/css/styles.css}"></head>
+<body class="edit-page">
+<main class="edit-container">
+  <a href="/" class="back-link">← Back to board</a>
+  <section class="edit-panel">
+    <span class="eyebrow">TASK DETAILS</span><h1>Edit task</h1><p class="subheading">Keep the task clear, assigned, and actionable.</p>
+    <form method="post" th:action="@{/tasks/{id}/edit(id=${taskId})}" th:object="${form}" class="task-form">
+      <div class="field-error" th:each="e : ${#fields.errors('title')}" th:text="${e}"></div>
+      <label>Task title <span>*</span><input th:field="*{title}" maxlength="120" required></label>
+      <label>Description<textarea th:field="*{description}" maxlength="2000" rows="4"></textarea></label>
+      <label>Assignee <span>*</span><input th:field="*{assignee}" maxlength="80" required></label>
+      <label>Due date<input type="date" th:field="*{dueDate}"></label>
+      <label>Section <span>*</span><input th:field="*{section}" maxlength="80" list="sectionSuggestions" required placeholder="Job, College, Home"><datalist id="sectionSuggestions"><option th:each="section : ${sections}" th:value="${section}"></option><option value="General"></option><option value="Job"></option><option value="College"></option><option value="Home"></option></datalist><small>Type a new section name to create a new group.</small></label>
+      <div class="form-row"><label>Priority<select th:field="*{priority}"><option th:each="p : ${priorities}" th:value="${p}" th:text="${p}"></option></select></label>
+      <label>Status<select th:field="*{status}"><option th:each="s : ${statuses}" th:value="${s}" th:text="${s.toString().replace('_',' ')}"></option></select></label></div>
+      <div class="modal-actions"><a href="/" class="secondary-button button-link">Cancel</a><button type="submit" class="primary-button">Save changes</button></div>
+    </form>
+    <div class="task-extras">
+      <section class="extra-panel"><h2>Checklist</h2><p class="subheading">Break this task into smaller steps.</p>
+        <form method="post" th:action="@{/tasks/{id}/checklist(id=${taskId})}" class="inline-add"><input name="text" maxlength="180" required placeholder="Add a checklist item"><button class="primary-button" type="submit">Add</button></form>
+        <div class="checklist-row" th:each="item : ${checklist}"><form method="post" th:action="@{/tasks/{id}/checklist/{itemId}/toggle(id=${taskId},itemId=${item.id})}"><input type="hidden" name="completed" th:value="${!item.completed}"><button type="submit" class="check-toggle" th:classappend="${item.completed ? ' checked' : ''}" th:text="${item.completed ? '✓' : '○'}" aria-label="Toggle checklist item"></button></form><span th:classappend="${item.completed ? ' checklist-done' : ''}" th:text="${item.text}"></span><form method="post" th:action="@{/tasks/{id}/checklist/{itemId}/delete(id=${taskId},itemId=${item.id})}"><button class="delete-link" type="submit" aria-label="Delete checklist item">×</button></form></div>
+        <p class="muted-note" th:if="${#lists.isEmpty(checklist)}">No checklist items yet.</p>
+      </section>
+      <section class="extra-panel"><h2>Attachments</h2><p class="subheading">Attach reference files (up to 10 MB each).</p>
+        <form method="post" enctype="multipart/form-data" th:action="@{/tasks/{id}/attachments(id=${taskId})}" class="inline-add upload-form"><input type="file" name="file" required><button class="primary-button" type="submit">Upload</button></form>
+        <div class="attachment-row" th:each="attachment : ${attachments}"><span class="file-icon">↗</span><div class="attachment-name"><a th:href="@{/tasks/{id}/attachments/{attachmentId}(id=${taskId},attachmentId=${attachment.id})}" th:text="${attachment.originalName}">file.pdf</a><small th:text="${#numbers.formatDecimal(attachment.sizeBytes / 1024.0, 1, 1)} + ' KB'"></small></div><form method="post" th:action="@{/tasks/{id}/attachments/{attachmentId}/delete(id=${taskId},attachmentId=${attachment.id})}"><button class="delete-link" type="submit">Remove</button></form></div>
+        <p class="muted-note" th:if="${#lists.isEmpty(attachments)}">No attachments yet.</p>
+      </section>
+    </div>
+  </section>
+</main></body></html>

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create account — TaskFlow</title><link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body class="login-page">
+  <main class="login-card">
+    <a class="brand login-brand" th:href="@{/login}"><span class="brand-mark">T</span><span>TaskFlow<small>PERSONAL WORKSPACE</small></span></a>
+    <span class="eyebrow">GET STARTED</span>
+    <h1>Create your account</h1>
+    <p class="subheading">Create a private workspace for your tasks and plans.</p>
+    <div class="flash error" th:if="${error}" th:text="${error}"></div>
+    <form method="post" th:action="@{/register}" th:object="${registration}" class="task-form login-form">
+      <label>Username<input th:field="*{username}" autocomplete="username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9._-]+" placeholder="3–32 characters"><small>Letters, numbers, dots, underscores, and hyphens.</small></label>
+      <label>Email<input th:field="*{email}" type="email" autocomplete="email" required maxlength="254" placeholder="you@example.com"></label>
+      <label>Password<input th:field="*{password}" type="password" autocomplete="new-password" required minlength="10" maxlength="72" placeholder="At least 10 characters"></label>
+      <button type="submit" class="primary-button login-submit">Create account</button>
+    </form>
+    <p class="login-footnote">Already have an account? <a th:href="@{/login}">Sign in</a></p>
+  </main>
+</body>
+</html>
