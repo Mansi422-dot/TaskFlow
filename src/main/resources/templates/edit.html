@@ -6,8 +6,10 @@
   <a href="/" class="back-link">← Back to board</a>
   <section class="edit-panel">
     <span class="eyebrow">TASK DETAILS</span><h1>Edit task</h1><p class="subheading">Keep the task clear, assigned, and actionable.</p>
+    <div class="flash success" th:if="${success}" th:text="${success}"></div>
+    <div class="flash error" th:if="${error}" th:text="${error}"></div>
     <form method="post" th:action="@{/tasks/{id}/edit(id=${taskId})}" th:object="${form}" class="task-form">
-      <div class="field-error" th:each="e : ${#fields.errors('title')}" th:text="${e}"></div>
+      <div class="field-error" th:each="e : ${#fields.errors('*')}" th:text="${e}"></div>
       <label>Task title <span>*</span><input th:field="*{title}" maxlength="120" required></label>
       <label>Description<textarea th:field="*{description}" maxlength="2000" rows="4"></textarea></label>
       <label>Assignee <span>*</span><input th:field="*{assignee}" maxlength="80" required></label>
@@ -30,4 +32,75 @@
       </section>
     </div>
   </section>
-</main></body></html>
+</main>
+<script>
+(() => {
+  const taskForm = document.querySelector('form.task-form');
+  const extras = document.querySelector('.task-extras');
+  if (!taskForm || !extras) return;
+
+  let saving = false;
+
+  extras.addEventListener('submit', async (event) => {
+    const actionForm = event.target.closest('form');
+    if (!actionForm || !extras.contains(actionForm)) return;
+
+    const toggleButton = actionForm.querySelector('.check-toggle');
+    const isToggle = Boolean(toggleButton);
+
+    event.preventDefault();
+    if (saving) return;
+    if (!taskForm.reportValidity()) return;
+
+    saving = true;
+    const submitButton = event.submitter;
+    if (submitButton) submitButton.disabled = true;
+
+    try {
+      // Save pending title/description/section/etc. before applying the extra action.
+      const saveResponse = await fetch(taskForm.action, {
+        method: 'POST',
+        body: new FormData(taskForm),
+        credentials: 'same-origin',
+        redirect: 'follow'
+      });
+      const finalUrl = new URL(saveResponse.url, window.location.href);
+      const editPath = new URL(taskForm.action, window.location.href).pathname;
+      if (!saveResponse.ok || finalUrl.pathname === editPath) {
+        window.location.assign(saveResponse.url || window.location.href);
+        return;
+      }
+
+      if (isToggle) {
+        // Toggle in the background so the browser doesn't jump to the top.
+        const actionResponse = await fetch(actionForm.action, {
+          method: 'POST',
+          body: new FormData(actionForm),
+          credentials: 'same-origin',
+          redirect: 'follow'
+        });
+        if (!actionResponse.ok) throw new Error('Checklist update failed');
+
+        const completed = actionForm.querySelector('input[name="completed"]').value === 'true';
+        toggleButton.classList.toggle('checked', completed);
+        toggleButton.textContent = completed ? '✓' : '○';
+        toggleButton.setAttribute('aria-label', completed ? 'Mark checklist item incomplete' : 'Mark checklist item complete');
+        const itemText = actionForm.closest('.checklist-row')?.querySelector('span');
+        if (itemText) itemText.classList.toggle('checklist-done', completed);
+        actionForm.querySelector('input[name="completed"]').value = String(!completed);
+        saving = false;
+        if (submitButton) submitButton.disabled = false;
+        return;
+      }
+
+      // Other extra actions still use their existing server-rendered response.
+      HTMLFormElement.prototype.submit.call(actionForm);
+    } catch (error) {
+      alert('Could not save your changes. Please try again.');
+      saving = false;
+      if (submitButton) submitButton.disabled = false;
+    }
+  });
+})();
+</script>
+</body></html>

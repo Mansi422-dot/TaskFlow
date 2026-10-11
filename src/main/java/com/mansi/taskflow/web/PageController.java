@@ -119,13 +119,40 @@ public class PageController {
 
     @PostMapping("/tasks")
     public String create(@Valid @ModelAttribute("form") TaskForm form, BindingResult result,
-                         RedirectAttributes redirect, java.security.Principal principal) {
+                         @RequestParam(required = false) String checklistItems,
+                         @RequestParam(value = "file", required = false) MultipartFile file,
+                         RedirectAttributes redirect, java.security.Principal principal) throws Exception {
         if (result.hasErrors()) {
             redirect.addFlashAttribute("error", result.getFieldErrors().stream()
                     .map(e -> e.getDefaultMessage()).findFirst().orElse("Please check the form."));
             return "redirect:/";
         }
-        service.createForUser(principal.getName(), form.getTitle(), form.getDescription(), form.getAssignee(), form.getPriority(), form.getStatus(), form.getDueDate(), form.getSection());
+        java.util.List<String> newChecklist = checklistItems == null || checklistItems.isBlank()
+                ? java.util.List.of()
+                : checklistItems.lines().map(String::trim).filter(line -> !line.isEmpty()).toList();
+        if (newChecklist.stream().anyMatch(item -> item.length() > 180)) {
+            redirect.addFlashAttribute("error", "Each checklist item must be 180 characters or fewer.");
+            return "redirect:/";
+        }
+        if (file != null && !file.isEmpty() && file.getSize() > 10L * 1024 * 1024) {
+            redirect.addFlashAttribute("error", "Files must be 10 MB or smaller.");
+            return "redirect:/";
+        }
+        Task created = service.createForUser(principal.getName(), form.getTitle(), form.getDescription(),
+                form.getAssignee(), form.getPriority(), form.getStatus(), form.getDueDate(), form.getSection());
+        for (String item : newChecklist) {
+            service.addChecklistItemForUser(principal.getName(), created.getId(), item);
+        }
+        if (file != null && !file.isEmpty()) {
+            String original = Paths.get(file.getOriginalFilename() == null ? "attachment" : file.getOriginalFilename())
+                    .getFileName().toString();
+            String stored = UUID.randomUUID() + "-" + original.replaceAll("[^a-zA-Z0-9._-]", "_");
+            Path dir = Paths.get(System.getProperty("taskflow.upload-dir", "./data/uploads")).toAbsolutePath().normalize();
+            Files.createDirectories(dir);
+            Files.copy(file.getInputStream(), dir.resolve(stored), StandardCopyOption.REPLACE_EXISTING);
+            service.saveAttachmentForUser(principal.getName(), created.getId(), original, stored,
+                    file.getContentType() == null ? "application/octet-stream" : file.getContentType(), file.getSize());
+        }
         redirect.addFlashAttribute("success", "Task created successfully.");
         return "redirect:/";
     }
@@ -157,12 +184,18 @@ public class PageController {
             model.addAttribute("attachments", service.attachmentsForUser(principal.getName(), id));
             return "edit";
         }
+        Task existing = service.getForUserPublic(id, principal.getName());
+        java.time.LocalDate effectiveDueDate = form.getDueDate() != null ? form.getDueDate() : existing.getDueDate();
         try {
-            service.updateForUser(principal.getName(), id, form.getTitle(), form.getDescription(), form.getAssignee(), form.getPriority(), form.getStatus(), form.getDueDate(), form.getSection());
+            service.updateForUser(principal.getName(), id, form.getTitle(), form.getDescription(),
+                    form.getAssignee(), form.getPriority(), form.getStatus(), effectiveDueDate, form.getSection());
             redirect.addFlashAttribute("success", "Task updated successfully.");
             return "redirect:/";
         } catch (IllegalStateException ex) {
-            redirect.addFlashAttribute("error", ex.getMessage());
+            // Keep editable fields even when moving to DONE is blocked by an incomplete checklist.
+            service.updateForUser(principal.getName(), id, form.getTitle(), form.getDescription(),
+                    form.getAssignee(), form.getPriority(), existing.getStatus(), effectiveDueDate, form.getSection());
+            redirect.addFlashAttribute("error", "Your task details were saved, but its status was not changed: " + ex.getMessage());
             return "redirect:/tasks/" + id + "/edit";
         }
     }
