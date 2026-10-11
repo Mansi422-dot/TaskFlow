@@ -6,6 +6,14 @@ The application runs locally and uses a file-based database, so you don't need a
 
 ## Screenshots
 
+### Create an account
+
+![TaskFlow registration page](assets/taskflow-registration.png)
+
+### Sign in
+
+![TaskFlow sign-in page](assets/taskflow-login.png)
+
 ### Task dashboard
 
 ![TaskFlow dashboard showing task columns, search, filters, due dates, and checklist progress](assets/taskflow-dashboard.png)
@@ -14,13 +22,6 @@ The application runs locally and uses a file-based database, so you don't need a
 
 ![TaskFlow create-task form with title, description, assignee, priority, due date, section, and status](assets/taskflow-create-task.png)
 
-### Sign in
-
-![TaskFlow sign-in page](assets/taskflow-login.png)
-
-### Create an account
-
-![TaskFlow registration page](assets/taskflow-registration.png)
 
 ## Features
 
