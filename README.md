@@ -1,52 +1,136 @@
-# TaskFlow — Local Task Manager
+# TaskFlow — Personal Task Management
 
-TaskFlow is a Java 17 / Spring Boot portfolio project. It runs locally on your computer and does not require a paid hosting service or cloud database.
+TaskFlow is a full-stack task management web application built with **Java 17, Spring Boot, Spring Security, Thymeleaf, and H2**. It helps users organize tasks, track progress, manage deadlines, and keep related work in one personal workspace.
+
+The application runs locally and uses a file-based database, so you don't need a paid hosting service or cloud database to try it.
+
+## Screenshots
+
+### Task dashboard
+
+![TaskFlow dashboard showing task columns, search, filters, due dates, and checklist progress](assets/taskflow-dashboard.png)
+
+### Create a task
+
+![TaskFlow create-task form with title, description, assignee, priority, due date, section, and status](assets/taskflow-create-task.png)
+
+### Sign in
+
+![TaskFlow sign-in page](assets/taskflow-login.png)
+
+### Create an account
+
+![TaskFlow registration page](assets/taskflow-registration.png)
 
 ## Features
-- Kanban board: To do, In progress, and Done
-- Account registration and sign-in/sign-out with BCrypt password hashing
-- Email-based password reset links with hashed, single-use tokens that expire after 30 minutes
-- Separate task workspaces for registered users, enforced by owner-scoped server operations
-- Create, edit, search, filter, reprioritize, and delete tasks
-- Custom sections such as **Job**, **College**, and **Home**; type a new section name to create it
-- Due dates with overdue / due-today indicators
-- Per-task checklists, shown on task cards with completed/total counts and a percentage progress bar
-- File attachments up to 10 MB each, stored locally
-- Drag-and-drop between board columns with saved status/order
-- REST API for task CRUD operations
-- H2 file database, retained across app restarts
+
+- **Personal accounts:** register, sign in, and sign out, with BCrypt password hashing.
+- **Task management:** create, edit, search, filter, reprioritize, and delete tasks.
+- **Kanban board:** organize tasks into To do, In progress, and Done columns.
+- **Custom sections:** group tasks by areas such as College, Work, or Home. Enter a new section name when creating or editing a task.
+- **Due dates:** track deadlines and identify overdue tasks.
+- **Checklists:** add checklist items, mark them complete, and view completion counts, percentages, and progress bars on task cards.
+- **Completion confirmation:** receive a confirmation when marking a task complete while checklist items remain unfinished.
+- **File attachments:** attach files to tasks, with a maximum upload size of 10 MB per file.
+- **Drag and drop:** move tasks between board columns, with status and ordering saved.
+- **Password recovery:** request email-based password-reset links when SMTP is configured. Reset tokens are stored as SHA-256 hashes, expire after 30 minutes, and are invalidated after use.
+- **REST API:** perform task operations through authenticated API endpoints, with server-side ownership checks.
+- **Persistent local storage:** save task data in an H2 file database and uploaded attachments on the local filesystem.
+- **Authentication rate limiting:** apply configurable request limits to login, registration, forgot-password, and password-reset submissions.
+
+## Technology stack
+
+| Technology | Purpose |
+|---|---|
+| Java 17 | Application language and runtime baseline |
+| Spring Boot | Application framework |
+| Spring Security | Authentication and access control |
+| Spring Data JPA / Hibernate | Database access and ORM |
+| Thymeleaf | Server-rendered web pages |
+| H2 Database | Local file-based database |
+| Maven | Dependency management, build, and tests |
+| HTML, CSS, JavaScript | User interface and browser interactions |
+| JUnit, Mockito, MockMvc | Automated testing |
 
 ## Requirements
-- JDK 17 or newer
-- Maven 3.8 or newer
-- Internet access for Maven to download dependencies on the first build
 
-Check:
+Install the following:
+
+- **JDK 17 or newer**
+- **Maven 3.8 or newer**
+- Git
+- Internet access for downloading the repository and Maven dependencies
+
+Verify your Java and Maven installations:
+
 ```bash
 java -version
 mvn -version
+git --version
 ```
 
-## Run locally
-Open a terminal in this project folder and run:
+Make sure Maven is using a compatible JDK. The project targets Java 17, so a newer compatible JDK can also be used.
+
+## Clone and run locally
+
+### 1. Clone the repository
+
+Open a terminal and run:
+
+```bash
+git clone https://github.com/Mansi422-dot/TaskFlow.git
+cd TaskFlow
+```
+
+### 2. Run the automated tests
+
 ```bash
 mvn clean test
+```
+
+This cleans the previous build output and runs the project's automated tests. Confirm that Maven reports `BUILD SUCCESS` before proceeding.
+
+### 3. Start the application
+
+```bash
 mvn spring-boot:run
 ```
-Then open **http://localhost:8080**.
 
-### Accounts and privacy
-- Open `/register` to create an account, then sign in at `/login`.
-- Usernames and email addresses must be unique. Passwords are stored as BCrypt hashes.
-- Each task belongs to its creator; task, checklist, REST, and attachment routes verify ownership on the server.
-- On an existing local database, the first registered account is assigned any legacy tasks that do not yet have an owner. This is a non-destructive schema upgrade; back up `data/` before upgrading.
-- This is a portfolio/demo implementation. Password reset email delivery requires SMTP configuration using environment variables. This is still a local portfolio/demo app; before public production deployment, add robust rate limiting, HTTPS, secure deployment secrets, monitoring, and a production database.
+Alternatively, on Linux or Kali, you can use the included launcher:
 
-The server binds to `0.0.0.0` in the current WSL-friendly configuration so Windows can reach the app. Do not expose port 8080 to untrusted networks; for local-only use, restrict access with your host firewall or set `server.address=127.0.0.1` if loopback access works in your environment.
+```bash
+chmod +x run-taskflow.sh
+./run-taskflow.sh
+```
 
-### Configure password reset email (optional)
+Use one startup method at a time. Wait for Spring Boot to finish starting before opening the application.
 
-TaskFlow uses SMTP to send a one-time reset link. For Gmail, enable 2-Step Verification and create a Google App Password; do not use your regular Gmail password. Set these environment variables in the terminal before starting TaskFlow:
+### 4. Open TaskFlow
+
+Visit:
+
+**http://localhost:8080**
+
+If you are running the application in WSL, open the address in your Windows browser while the application is running.
+
+### 5. Create an account
+
+1. Open `/register` or select the account-creation link on the sign-in page.
+2. Register with a username, email address, and password that meets the application's requirements.
+3. Sign in at `/login`.
+4. Create your first task using **New task**.
+5. Add a due date, priority, section, checklist items, or attachment as needed.
+6. Move tasks between board columns and use search or filters to find specific tasks.
+
+A fresh local database is initialized as needed when the application starts.
+
+## Password-reset email configuration (optional)
+
+Email-based password recovery requires SMTP credentials. Without SMTP configuration, the application can display the generic forgot-password response, but it cannot deliver a reset email.
+
+For Gmail, enable 2-Step Verification and create a Google App Password. Use the App Password rather than your normal Gmail password.
+
+Set the following environment variables in the same terminal used to start the application:
 
 ```bash
 export TASKFLOW_SMTP_HOST=smtp.gmail.com
@@ -57,42 +141,100 @@ export TASKFLOW_MAIL_FROM="your-email@gmail.com"
 export TASKFLOW_BASE_URL="http://localhost:8080"
 ```
 
-Then run `mvn spring-boot:run` in that same terminal. Keep these values private and never commit them. If SMTP is not configured, the forgot-password form still shows a generic response, but no email can be delivered. The reset token is random, stored only as a SHA-256 hash, expires after 30 minutes, and is invalidated after use. Keep TaskFlow local-only; the default base URL is suitable for local development, not public deployment.
+Then start the application:
 
-## Checklist progress
-The card shows:
-- completed / total items (for example, `3/5`)
-- percent complete (for example, `60%`)
-- a progress bar
-- checklist item text, with completed items struck through
+```bash
+mvn spring-boot:run
+```
 
-The progress is calculated from saved checklist items. Open **Edit** to add, complete, or remove items; returning to the board shows the updated progress. When marking a task complete, the app asks for confirmation if checklist items remain incomplete.
+Replace the example email address and password with your own values. Keep credentials private; never commit them to GitHub or put real secrets in this README.
 
-## Sections
-When creating or editing a task, enter a section name such as `Job`, `College`, or `Home`. A new name becomes a section automatically. Use the flexible search field to find tasks by title, description, assignee, section, priority, or status. Existing tasks without a section are displayed as `General`.
+The base URL shown above is for local development. If you change the port or local address, update the configuration accordingly.
 
-## Local data and backups
-- Task data is stored in `./data/taskflow.mv.db`.
-- Uploaded files are stored in `./data/uploads/`.
-- Keep both when backing up or moving the project.
-- Before replacing project files or changing database schema, stop the app and make a copy of the entire `data/` folder.
-- Do not commit the `data/` folder or passwords to GitHub; it is excluded by `.gitignore`.
+## Data storage and backups
 
-## REST API examples
-The API is protected by Spring Security and requires an authenticated session. Use the browser to sign in first; do not place account passwords in shell history or repository documentation. The API shares the same per-account task ownership checks as the web interface.
+TaskFlow stores data locally by default.
+
+- **Database:** `data/taskflow.mv.db`
+- **Uploaded attachments:** `data/uploads/`
+
+These files are generated locally and are not included in the Git repository.
+
+To back up your data:
+
+1. Stop the application.
+2. Copy the entire `data/` directory to a safe location.
+3. Keep the backup private, since it can contain account information, task details, and uploaded files.
+
+Before replacing project files or changing the database schema, stop the application and back up `data/`. Do not delete this directory if you want to preserve your existing tasks and attachments.
+
+## Security and privacy notes
+
+- Passwords are hashed with BCrypt rather than stored as plaintext.
+- Password-reset tokens are stored as SHA-256 hashes, expire after 30 minutes, and are invalidated after use.
+- Task operations check ownership on the server so that one user's tasks are not accessible through another user's task operations.
+- Authentication endpoints have configurable, in-memory rate limits. The default settings are 10 login attempts, 5 registration submissions, 3 forgot-password submissions, and 10 reset-password submissions per client IP per 15-minute window. Limits apply to POST requests to the corresponding endpoints.
+- The default rate limiter uses the server-observed client IP address and is intended for a local portfolio application. It is not a substitute for a distributed rate-limiting system in a multi-instance production deployment.
+- SMTP credentials should be provided through environment variables and kept out of version control.
+- The current WSL-friendly configuration binds the server to `0.0.0.0`, allowing Windows to reach the application. This can also make it reachable through other network interfaces. Do not expose port 8080 to untrusted networks. For local-only use, restrict access through your host firewall or configure `server.address=127.0.0.1` if loopback access works in your environment.
+
+**Important:** TaskFlow is a portfolio/demo application designed for local use. A public production deployment would require a security review and additional hardening, including HTTPS, secure secret management, production-grade rate limiting, monitoring, and an appropriately managed database.
 
 ## Project structure
+
 ```text
-src/main/java/com/mansi/taskflow/
-  model/       Task, checklist items, attachments, user accounts, reset tokens, priority and status
-  repository/  Spring Data JPA repositories
-  service/     Task operations, registration, password reset
-  web/         Page controller, API controller, form and security configuration
-src/main/resources/
-  application.properties
-  templates/   index.html, edit.html, login.html, register.html, password recovery pages
-  static/      CSS and JavaScript
-src/test/java/
-  service/     Task service tests including checklist percentage
-  web/         REST API tests
+TaskFlow/
+├── assets/                         # README screenshots
+├── src/
+│   ├── main/
+│   │   ├── java/com/mansi/taskflow/
+│   │   │   ├── model/              # Entities and domain models
+│   │   │   ├── repository/         # Spring Data repositories
+│   │   │   ├── service/            # Application services
+│   │   │   └── web/                # Controllers, forms, and security
+│   │   └── resources/
+│   │       ├── templates/          # Thymeleaf HTML templates
+│   │       ├── static/             # CSS and JavaScript
+│   │       └── application.properties
+│   └── test/java/com/mansi/taskflow/
+│       ├── service/                # Service tests
+│       └── web/                    # Web and API tests
+├── .gitignore
+├── pom.xml
+├── README.md
+└── run-taskflow.sh
 ```
+
+## Troubleshooting
+
+**Maven cannot resolve dependencies**
+
+Check your internet connection and Maven installation, then retry:
+
+```bash
+mvn clean test
+```
+
+**Port 8080 is already in use**
+
+Stop the other application using the port, or configure TaskFlow to use an available port.
+
+**Password-reset email is not arriving**
+
+Confirm that all required SMTP environment variables are set in the terminal from which TaskFlow is started. Check your SMTP provider's configuration and credentials.
+
+**Tasks or attachments appear to be missing**
+
+Confirm that you are using the same local project data directory and have not replaced or removed the `data/` folder. A fresh clone does not include another installation's database or uploaded files.
+
+**The app works on one computer but not another**
+
+Check the Java and Maven versions, follow the setup steps above, and inspect the terminal output for startup or database errors.
+
+## Future improvements
+
+Possible extensions include stronger integration tests, additional accessibility improvements, more advanced task organization, and production-oriented deployment hardening.
+
+## License
+
+No license is specified here. If you intend others to reuse, modify, or redistribute this project, consider adding a `LICENSE` file with the terms you choose.
